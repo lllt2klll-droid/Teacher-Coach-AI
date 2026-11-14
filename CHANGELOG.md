@@ -2,7 +2,30 @@
 
 Tất cả thay đổi đáng chú ý của Teacher Coach AI được ghi tại đây.
 Định dạng tham khảo [Keep a Changelog](https://keepachangelog.com/vi/1.0.0/);
-dự án dùng phiên bản ứng dụng `0.3.0` và schema IndexedDB `3`.
+dự án dùng phiên bản ứng dụng `0.3.1` và schema IndexedDB `3`.
+
+## [0.3.1] — 2026-11-13
+
+Sửa lỗi học sinh AI trả lời theo tên bài trong kế hoạch dạy thay vì nội dung slide đang trình chiếu.
+
+### Sửa lỗi
+
+- **Ưu tiên văn bản trang PDF:** khi đính kèm PDF, `pdf-visual.ts` đọc text layer của từng trang bằng `getTextContent()` và lưu `visualText`; `buildPresentationContext()` dùng văn bản trang đang chiếu làm ngữ cảnh AI và lấy dòng đầu làm tiêu đề slide. Trang PDF không có text layer quay về văn bản PPTX; ảnh không được OCR.
+- **Câu hỏi về tên đề/tiêu đề:** local provider trả lời từ slide hiện tại trước khi tra kế hoạch bài dạy. Trường hợp slide “Kể chuyện Đôi cánh của Ngựa Trắng” không còn bị trả lời “Bài 54: Bảng nhân 3”.
+- **Gemini:** prompt nói rõ slide hiện tại là nguồn đúng cho những gì đang hiển thị và không dùng tên kế hoạch bài dạy nếu khác.
+- **Giao diện:** thông báo đính kèm/bỏ PDF mô tả đúng việc AI đọc văn bản trang PDF, fallback PPTX.
+
+### Kiểm thử
+
+- `npm run typecheck` sạch.
+- `npm run test`: 13 tệp, 62 test.
+- Bổ sung test hồi quy cho tiêu đề slide ưu tiên hơn tiêu đề bài học, văn bản PDF ưu tiên hơn PPTX và fallback khi trang PDF không có text layer.
+- Kiểm thử tích hợp trong trình duyệt với PDF 3 trang có text layer tiếng Việt: `pageTexts` đúng từng trang, `context.title` là “Kể chuyện Đôi cánh của Ngựa Trắng”, local provider trả lời đúng tiêu đề slide thay vì “Bài 54: Bảng nhân 3”.
+
+### Giới hạn đã biết
+
+- PDF chỉ có ảnh/scan không có text layer sẽ dùng văn bản PPTX; hệ thống không OCR.
+- Chưa xác minh Gemini live do chưa có khóa hợp lệ.
 
 ## [0.3.0] — 2026-11-13
 

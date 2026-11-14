@@ -12,8 +12,9 @@ import { uid } from '@/lib/utils';
  * PowerPoint itself is the only renderer that can reproduce a .pptx exactly,
  * so the teacher can optionally attach the PDF exported from PowerPoint. The
  * PDF is read in the browser and only the rendered page JPEGs are persisted in
- * IndexedDB; the PDF file itself is never stored or uploaded. Text and the AI
- * context still come from the PPTX parser, so the two files stay independent.
+ * IndexedDB; the PDF file itself is never stored or uploaded. If a page has a
+ * text layer, that page's text is stored too so AI students read exactly what
+ * is displayed instead of stale PPTX text.
  */
 
 export const MAX_PDF_BYTES = 80 * 1024 * 1024;
@@ -23,6 +24,7 @@ const MAX_RENDER_DIMENSION = 2400;
 const MAX_TOTAL_BYTES = 80 * 1024 * 1024;
 const JPEG_QUALITY = 0.9;
 const ASPECT_TOLERANCE = 0.08;
+const MAX_PAGE_TEXT_CHARS = 8_000;
 
 export interface PdfVisualProgress {
   value: number;
@@ -38,6 +40,8 @@ export interface RenderedPdfVisual {
   assets: PresentationAsset[];
   /** Asset id for each rendered page, in page order (missing pages are skipped). */
   pageAssetIds: string[];
+  /** Text layer of each rendered page, aligned with `pageAssetIds`; empty when absent. */
+  pageTexts: string[];
   warnings: ParsingIssue[];
 }
 
@@ -75,6 +79,31 @@ function canvasToJpeg(canvas: HTMLCanvasElement): Promise<Blob> {
       JPEG_QUALITY,
     );
   });
+}
+
+/**
+ * Flattens PDF.js text items into reading-order lines. The PDF text layer is
+ * only used as AI context; the image remains the source of truth for display.
+ */
+function textFromPdfItems(items: ReadonlyArray<unknown>): string {
+  const lines: string[] = [];
+  let current = '';
+  const flush = () => {
+    const line = current.replace(/\s+/g, ' ').trim();
+    if (line) lines.push(line);
+    current = '';
+  };
+  for (const item of items) {
+    if (!item || typeof item !== 'object') continue;
+    const record = item as { str?: unknown; hasEOL?: unknown };
+    if (typeof record.str === 'string' && record.str) {
+      if (current && !/\s$/.test(current) && !/^\s/.test(record.str)) current += ' ';
+      current += record.str;
+    }
+    if (record.hasEOL) flush();
+  }
+  flush();
+  return lines.join('\n').slice(0, MAX_PAGE_TEXT_CHARS).trim();
 }
 
 export interface RenderPdfVisualOptions {
@@ -161,6 +190,7 @@ export async function renderPdfVisual(
 
     const assets: PresentationAsset[] = [];
     const pageAssetIds: string[] = [];
+    const pageTexts: string[] = [];
     let totalBytes = 0;
     let renderedPages = 0;
     let stoppedForSize = false;
@@ -230,8 +260,17 @@ export async function renderPdfVisual(
           size: blob.size,
           blob,
         };
+        let pageText = '';
+        try {
+          const content = await page.getTextContent();
+          pageText = textFromPdfItems(content.items);
+        } catch (error) {
+          // Image-only PDFs are valid; AI falls back to the PPTX text.
+          console.warn(`[Teacher Coach AI] Could not read PDF text on page ${pageNumber}:`, error);
+        }
         assets.push(asset);
         pageAssetIds.push(asset.id);
+        pageTexts.push(pageText);
         totalBytes += blob.size;
         renderedPages += 1;
       } catch (error) {
@@ -267,6 +306,7 @@ export async function renderPdfVisual(
       pageCount: renderedPages,
       assets,
       pageAssetIds,
+      pageTexts,
       warnings,
     };
   } finally {
@@ -284,10 +324,14 @@ export async function renderPdfVisual(
  */
 export function applyPdfVisual(presentation: PresentationDoc, rendered: RenderedPdfVisual): PresentationDoc {
   const oldVisualIds = visualAssetIds(presentation.slides);
-  const slides: PresentationSlide[] = presentation.slides.map((slide, index) => ({
-    ...slide,
-    visualAssetId: rendered.pageAssetIds[index],
-  }));
+  const slides: PresentationSlide[] = presentation.slides.map((slide, index) => {
+    const visualText = rendered.pageTexts?.[index]?.trim();
+    return {
+      ...slide,
+      visualAssetId: rendered.pageAssetIds[index],
+      visualText: visualText || undefined,
+    };
+  });
   return {
     ...presentation,
     slides,
@@ -307,7 +351,7 @@ export function applyPdfVisual(presentation: PresentationDoc, rendered: Rendered
 export function clearPdfVisual(presentation: PresentationDoc): PresentationDoc {
   const oldVisualIds = visualAssetIds(presentation.slides);
   const slides: PresentationSlide[] = presentation.slides.map((slide) => {
-    const { visualAssetId: _visualAssetId, ...rest } = slide;
+    const { visualAssetId: _visualAssetId, visualText: _visualText, ...rest } = slide;
     return rest;
   });
   return {

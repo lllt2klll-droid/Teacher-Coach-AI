@@ -18,14 +18,32 @@ export function buildPresentationContext(
   if (!slides?.length) return null;
   const safeIndex = Math.max(0, Math.min(slides.length - 1, Number.isFinite(index) ? Math.round(index) : 0));
   const slide = slides[safeIndex];
-  const text = slide.text.replace(/\s+/g, ' ').trim().slice(0, MAX_SLIDE_TEXT_CHARS);
+  // When a PDF visual layer is attached, the PDF page text is what the class
+  // can actually see. Fall back to the PPTX text for image-only pages or when
+  // no PDF is attached.
+  const visualText = slide.visualText?.trim();
+  const visibleText = visualText || slide.text;
+  const text = visibleText.replace(/\s+/g, ' ').trim().slice(0, MAX_SLIDE_TEXT_CHARS);
+  const firstLine = visibleText
+    .split(/\n|(?<=[.!?…])\s+/u)
+    .map((line) => line.trim())
+    .find((line) => line.length >= 3);
+  // The PDF page is the source of truth for what is on screen, including the
+  // title a teacher may ask a student to read out loud. Strip a terminal period
+  // because slide titles are spoken inside a sentence.
+  const visibleTitle = firstLine?.replace(/[.:;,]+$/u, '').trim();
+  const title =
+    (visualText ? visibleTitle : slide.title?.trim()) ||
+    slide.title?.trim() ||
+    visibleTitle ||
+    `Slide ${safeIndex + 1}`;
   const outline = slides
     .slice(0, MAX_OUTLINE_SLIDES)
     .map((item, itemIndex) => `${itemIndex + 1}. ${item.title || `Slide ${itemIndex + 1}`}`);
   return {
     slideNumber: safeIndex + 1,
     totalSlides: slides.length,
-    title: slide.title || `Slide ${safeIndex + 1}`,
+    title,
     text,
     outline,
   };

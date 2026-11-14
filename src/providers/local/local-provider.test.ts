@@ -180,4 +180,36 @@ describe('LocalRuleProvider student speech', () => {
     expect(output.text).not.toContain('bốn cạnh bằng nhau');
     expect(output.quality).toBe('correct');
   });
+
+  it('reads the title of the slide on screen instead of the lesson-plan title', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const phase = makePhase({
+      questions: ['Đọc tên đề cho thầy nào.'],
+      expectedResponses: ['Bài 54: Bảng nhân 3'],
+    });
+    const lesson = makeLesson({
+      title: 'Bài 54: Bảng nhân 3',
+      lessonPhases: [phase],
+    });
+    const output = await new LocalRuleProvider().generateStudentResponse({
+      lesson,
+      phase,
+      student: makeStudent(),
+      teacherText: 'Đọc tên đề cho thầy nào.',
+      intent: 'question',
+      difficulty: 'easy',
+      recentTurns: [],
+      presentation: {
+        slideNumber: 1,
+        totalSlides: 8,
+        title: 'Kể chuyện Đôi cánh của Ngựa Trắng',
+        text: 'Kể chuyện Đôi cánh của Ngựa Trắng',
+        outline: ['1. Kể chuyện Đôi cánh của Ngựa Trắng'],
+      },
+    });
+
+    expect(output.text).toContain('Đôi cánh của Ngựa Trắng');
+    expect(output.text).not.toContain('Bài 54');
+    expect(output.quality).toBe('correct');
+  });
 });

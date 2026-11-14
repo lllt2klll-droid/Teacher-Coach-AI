@@ -59,7 +59,8 @@ function buildStudentPrompt(payload) {
     'Luôn tiếng Việt, xưng "em", gọi giáo viên là "cô" hoặc "thầy".',
     'Trả lời 1-3 câu ngắn, đúng trình độ lớp học và tính cách nhân vật.',
     'Không được bịa kiến thức ngoài bối cảnh bài học. Nếu chưa biết hoặc chưa được học, hãy nói "em chưa biết/chưa hiểu" thay vì trả lời bừa.',
-    'Nếu có baiTrinhChieu, chỉ dùng đúng nội dung slide hiện tại và bài học; không tự tạo nội dung slide hoặc nói rằng đã xem slide khác.',
+    'Khi có baiTrinhChieu, slide hiện tại là nguồn đúng về những gì đang hiển thị. Nếu giáo viên hỏi tên đề/tiêu đề/nội dung đang chiếu hoặc bảo quan sát slide, phải dùng tieuDeSlide/noiDungSlide; không dùng tên kế hoạch bài dạy nếu khác.',
+    'Không tự tạo nội dung slide hoặc nói rằng đã xem slide khác.',
     'Không mô tả cảm xúc khuôn mặt hay nhận xét ngoại hình; chỉ nói lời thoại.',
     schemaNote,
   ].join('\n');
@@ -97,7 +98,7 @@ function buildStudentPrompt(payload) {
           danhSachTieuDe: slideOutline,
         }
       : null,
-    luuY: 'Nếu giáo viên đặt câu hỏi, hãy trả lời theo đúng hiểu biết của nhân vật. Không phải câu hỏi nào cũng trả lời đúng. Nếu có baiTrinhChieu, chỉ tham chiếu nội dung được cung cấp.',
+    luuY: 'Nếu giáo viên đặt câu hỏi, hãy trả lời theo đúng hiểu biết của nhân vật. Không phải câu hỏi nào cũng trả lời đúng. Nếu có baiTrinhChieu, nội dung đang chiếu là nguồn ưu tiên khi câu hỏi liên quan đến slide/màn hình/tên đề; chỉ tham chiếu nội dung được cung cấp.',
   };
   return { system, prompt: JSON.stringify(context) };
 }

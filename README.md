@@ -12,7 +12,7 @@ Nền tảng luyện tập giảng dạy dành cho sinh viên Sư phạm Tiểu 
 | **Thư viện KHBD** | Tải PDF/DOCX/TXT hoặc dán văn bản; trích xuất cục bộ; xem, sửa, xác nhận kế hoạch bài dạy. |
 | **Lớp học AI** | 20 hồ sơ học sinh hư cấu với trình độ, tính cách, mức tham gia; có thể tạo/sửa/xóa hồ sơ. |
 | **Luyện tập** | Ba chế độ: tự nhiên, tình huống, trọng tâm; 14 bài luyện có tiêu chí; camera/micro là tùy chọn. |
-| **Bài trình chiếu** | Tải `.pptx` trước buổi luyện; 4 bố cục slide + camera, thumbnail, phím mũi tên, toàn màn hình và cửa sổ trình chiếu riêng. AI chỉ nhận nội dung slide hiện tại. Đính kèm PDF xuất từ PowerPoint để slide hiển thị đúng như bản gốc. |
+| **Bài trình chiếu** | Tải `.pptx` trước buổi luyện; 4 bố cục slide + camera, thumbnail, phím mũi tên, toàn màn hình và cửa sổ trình chiếu riêng. AI đọc văn bản của trang đang chiếu. Đính kèm PDF xuất từ PowerPoint để slide hiển thị đúng như bản gốc và AI đọc đúng trang PDF. |
 | **Phòng luyện** | Đồng hồ, lời giảng nhập tay hoặc nhận dạng giọng nói, phản hồi học sinh AI, gợi ý coaching trực tiếp, kết thúc và tạo báo cáo. |
 | **Báo cáo** | Chỉ số theo năng lực, bằng chứng trích từ dữ liệu, mức độ tin cậy, phần “chưa đủ dữ liệu”; tách báo cáo DEMO khỏi báo cáo thật; in / xuất PDF kèm bằng chứng. |
 | **Trung tâm luyện tập** | 14 bài luyện theo nhóm kỹ năng; kết quả chấm theo tiêu chí từ dữ liệu thật; thống kê không gồm DEMO. |
@@ -24,7 +24,7 @@ Nền tảng luyện tập giảng dạy dành cho sinh viên Sư phạm Tiểu 
 - **Camera/micro chỉ bật sau khi người dùng bấm nút** và cấp quyền trình duyệt. Không tự động bật khi vào phòng.
 - **Video không rời thiết bị.** MediaPipe chạy cục bộ trong trình duyệt. Ứng dụng không nhận diện danh tính, khuôn mặt hay cảm xúc; chỉ ước lượng tư thế (vai, hông, độ ổn định, cử chỉ tay).
 - **Ghi hình là tùy chọn, mặc định tắt.** Bản ghi (nếu bật) nằm trong IndexedDB và không được đưa vào tệp sao lưu.
-- **Bài trình chiếu xử lý cục bộ.** File `.pptx` và PDF (nếu đính kèm) chỉ được đọc trong trình duyệt, không tải lên máy chủ. Hệ thống không lưu file gốc: chỉ lưu văn bản/bố cục/ảnh trích xuất và ảnh từng trang PDF trong IndexedDB; dữ liệu slide không nằm trong bản sao lưu.
+- **Bài trình chiếu xử lý cục bộ.** File `.pptx` và PDF (nếu đính kèm) chỉ được đọc trong trình duyệt, không tải lên máy chủ. Hệ thống không lưu file gốc: chỉ lưu văn bản/bố cục/ảnh trích xuất, văn bản từng trang PDF và ảnh từng trang PDF trong IndexedDB; dữ liệu slide không nằm trong bản sao lưu.
 - **Khóa Gemini là tùy chọn.** Khuyến nghị đặt `GEMINI_API_KEY` trong biến môi trường server. Nếu nhập trong **Cài đặt → AI**, khóa chỉ nằm trong `sessionStorage` của tab, chỉ gửi tới proxy cùng nguồn `/api/ai`, không vào IndexedDB, không vào file sao lưu và bị xóa khi đóng tab. Server không ghi log khóa và luôn che khóa trong thông báo lỗi.
 - **Học sinh AI là nhân vật hư cấu**, không phải trẻ em thật. Hồ sơ có thể sửa/xóa.
 
@@ -75,11 +75,11 @@ Không có buổi luyện hay báo cáo giả nào được tạo.
 ## Bài trình chiếu (tùy chọn)
 
 1. Trong **Luyện tập → 2. Bài trình chiếu (PPTX)**, chọn file `.pptx` (tối đa 60 MB). Slide được đọc ngay trong trình duyệt.
-2. Muốn slide giống **chính xác** bản PowerPoint, mở file đó trong PowerPoint → **Save As → PDF**, rồi bấm **Tải PDF xuất từ PowerPoint**. Hệ thống chỉ lưu ảnh từng trang (tối đa 120 trang, 1600 px), không lưu file PDF.
+2. Muốn slide giống **chính xác** bản PowerPoint, mở file đó trong PowerPoint → **Save As → PDF**, rồi bấm **Tải PDF xuất từ PowerPoint**. Hệ thống chỉ lưu văn bản và ảnh từng trang (tối đa 120 trang, 1600 px), không lưu file PDF.
 3. Chọn một trong bốn bố cục: slide chính + camera nhỏ, tab Camera/Slide, slide ở cột phải, hoặc cửa sổ trình chiếu riêng.
-4. Trong phòng luyện, dùng nút ← →/thumbnail/toàn màn hình hoặc phím mũi tên. Học sinh AI chỉ nhận **văn bản slide hiện tại + dàn ý**, không nhận toàn bộ bài trình chiếu.
+4. Trong phòng luyện, dùng nút ← →/thumbnail/toàn màn hình hoặc phím mũi tên. Học sinh AI chỉ nhận **văn bản trang đang chiếu + dàn ý**, không nhận toàn bộ bài trình chiếu. Khi có PDF, văn bản trang PDF được ưu tiên; trang PDF không có text layer sẽ dùng văn bản PPTX.
 
-Nếu chưa có PDF, slide dùng bản mô phỏng từ PPTX (có thể lệch font/bố cục). Biểu đồ, SmartArt và hiệu ứng chuyển động không được tái tạo; PDF khắc phục phần hiển thị nhưng AI vẫn đọc nội dung từ PPTX.
+Nếu chưa có PDF, slide dùng bản mô phỏng từ PPTX (có thể lệch font/bố cục). Biểu đồ, SmartArt và hiệu ứng chuyển động không được tái tạo; PDF khắc phục phần hiển thị và cung cấp văn bản đúng trang cho AI. Trang PDF chỉ có ảnh (không có text layer) vẫn dùng văn bản PPTX và không được OCR.
 
 ## Cấu hình AI (tùy chọn)
 
@@ -175,5 +175,5 @@ TEACHER/
 - Khóa nhập trong Cài đặt chỉ thuộc tab hiện tại (sessionStorage); mở tab mới hoặc đóng tab phải nhập lại. Với sử dụng lâu dài, nên đặt khóa ở server.
 - Ứng dụng không phải công cụ đánh giá giáo viên chính thức; báo cáo chỉ mang tính luyện tập.
 - Không có đồng bộ đa thiết bị. Dữ liệu nằm trong IndexedDB của từng trình duyệt/thiết bị.
-- **Slide PPTX không có PDF đi kèm** được mô phỏng gần đúng: font, shape phức tạp, SmartArt, biểu đồ và hiệu ứng chuyển động có thể khác PowerPoint. Đính kèm PDF xuất từ chính file PPTX để có bản hiển thị chính xác; PDF chỉ dùng để hiển thị, AI vẫn đọc nội dung từ PPTX.
+- **Slide PPTX không có PDF đi kèm** được mô phỏng gần đúng: font, shape phức tạp, SmartArt, biểu đồ và hiệu ứng chuyển động có thể khác PowerPoint. Đính kèm PDF xuất từ chính file PPTX để có bản hiển thị chính xác; AI đọc văn bản trang PDF đang chiếu, và quay về văn bản PPTX nếu trang PDF không có text layer.
 - PDF/PPTX gốc không được lưu. Ảnh slide/PDF nằm ngoài bản sao lưu nên khi chuyển máy cần tải lại bài trình chiếu.

@@ -223,7 +223,7 @@ export interface PresentationSlide {
   id: string;
   index: number;
   title: string;
-  /** Plain text extracted for display and for the AI student context. */
+  /** Plain text extracted from the PPTX slide; fallback for AI when the PDF page has no text layer. */
   text: string;
   background: SlideBackground;
   elements: SlideElement[];
@@ -232,6 +232,13 @@ export interface PresentationSlide {
    * When present it is shown instead of the approximate HTML reconstruction.
    */
   visualAssetId?: string;
+  /**
+   * Text extracted from the exact PDF page shown on screen. When present, this
+   * is what the AI students read, so their answers follow the visible slide
+   * rather than stale PPTX text. Falls back to `text` when the page has no
+   * text layer.
+   */
+  visualText?: string;
 }
 
 /** How the slide stage is drawn: reconstructed from PPTX or a PDF page image. */

@@ -104,5 +104,6 @@ describe('handleAiRequest student slide context', () => {
     expect(prompt).toContain('Lấy thừa số nhân với nhau.');
     expect(prompt).toContain('2. Quy tắc bảng nhân 4');
     expect(system).toContain('baiTrinhChieu');
+    expect(system).toContain('nguồn đúng');
   });
 });

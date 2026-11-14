@@ -68,6 +68,7 @@ function makeRendered(pageCount: number, prefix = 'pdf_new'): RenderedPdfVisual 
     pageCount,
     assets,
     pageAssetIds: assets.map((asset) => asset.id),
+    pageTexts: Array.from({ length: pageCount }, (_, index) => `Nội dung PDF trang ${index + 1}.`),
     warnings: [],
   };
 }
@@ -105,6 +106,17 @@ describe('applyPdfVisual', () => {
     expect(result.visualPageCount).toBe(2);
   });
 
+  it('stores the PDF page text so AI students read what is actually on screen', () => {
+    const result = applyPdfVisual(makePresentation(), makeRendered(3));
+
+    expect(result.slides.map((slide) => slide.visualText)).toEqual([
+      'Nội dung PDF trang 1.',
+      'Nội dung PDF trang 2.',
+      'Nội dung PDF trang 3.',
+    ]);
+    expect(result.slides[0].text).toBe('Khởi động: chơi trò chơi truyền điện.');
+  });
+
   it('drops the previous PDF assets when replacing the visual layer', () => {
     const withOldPdf = applyPdfVisual(makePresentation(), makeRendered(3, 'pdf_old'));
     const replaced = applyPdfVisual(withOldPdf, makeRendered(3, 'pdf_new'));
@@ -136,6 +148,7 @@ describe('clearPdfVisual', () => {
     const cleared = clearPdfVisual(withPdf);
 
     expect(cleared.slides.every((slide) => slide.visualAssetId === undefined)).toBe(true);
+    expect(cleared.slides.every((slide) => slide.visualText === undefined)).toBe(true);
     expect(cleared.slides.map((slide) => slide.text)).toEqual(
       withPdf.slides.map((slide) => slide.text),
     );

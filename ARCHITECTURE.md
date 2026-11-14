@@ -3,7 +3,7 @@
 ## 1. Mục tiêu kiến trúc
 
 - **Local-first:** mọi dữ liệu luyện tập và bài trình chiếu nằm trong IndexedDB của trình duyệt; không cần tài khoản hay backend lưu trữ.
-- **Slide local-first:** `.pptx` và PDF (nếu có) chỉ được đọc trong trình duyệt, không tải lên máy chủ. Không lưu file gốc; chỉ lưu văn bản/bố cục/ảnh trích xuất và ảnh từng trang PDF.
+- **Slide local-first:** `.pptx` và PDF (nếu có) chỉ được đọc trong trình duyệt, không tải lên máy chủ. Không lưu file gốc; chỉ lưu văn bản/bố cục/ảnh trích xuất, văn bản từng trang PDF và ảnh từng trang PDF.
 - **Bằng chứng trước, điểm sau:** mỗi chỉ số/báo cáo phải truy vết được về một mẫu dữ liệu (lời giảng, sự kiện lớp học, mẫu âm thanh, mẫu tư thế).
 - **AI có thể thay thế:** lớp học hoạt động đầy đủ bằng quy tắc cục bộ; Gemini chỉ là lớp tăng cường qua proxy.
 - **Quyền riêng tư mặc định:** camera/micro tắt, ghi hình tắt, video không rời thiết bị; khóa Gemini ưu tiên ở server, khóa nhập trong tab chỉ tồn tại trong `sessionStorage` và chỉ đi tới proxy cùng nguồn.
@@ -75,7 +75,7 @@
 
 ## 5. Mô hình dữ liệu (IndexedDB `teacher-coach-ai`, schema v3)
 
-Bảng `presentations` được thêm ở schema v3 (IndexedDB version 30). File PPTX/PDF gốc **không** được lưu; chỉ dữ liệu đã trích xuất và ảnh trang PDF.
+Bảng `presentations` được thêm ở schema v3 (IndexedDB version 30). File PPTX/PDF gốc **không** được lưu; chỉ dữ liệu đã trích xuất, văn bản trang PDF và ảnh trang PDF.
 
 | Bảng | Khóa / index chính | Nội dung |
 | --- | --- | --- |
@@ -90,7 +90,7 @@ Bảng `presentations` được thêm ở schema v3 (IndexedDB version 30). File
 | `reports` | `id, sessionId, createdAt, lessonPlanId, isDemo` | Báo cáo tổng hợp |
 | `trainingResults` | v2: `id, exerciseId, sessionId, completedAt` | Kết quả bài luyện có tiêu chí |
 | `recordings` | `sessionId` | Blob ghi hình/ghi âm cục bộ (tùy chọn) |
-| `presentations` | v3: `id, &lessonPlanId, updatedAt` | Văn bản/bố cục/ảnh PPTX + ảnh trang PDF (nếu đính kèm) của một bài dạy |
+| `presentations` | v3: `id, &lessonPlanId, updatedAt` | Văn bản/bố cục/ảnh PPTX + văn bản và ảnh trang PDF (nếu đính kèm) của một bài dạy |
 | `meta` | `key` | Cờ seed DEMO, opt-out… |
 
 Quan hệ chính: `lesson 1—n session`, `lesson 1—0..1 presentation`, `session 1—n observation/transcript/event/feedback`, `session 1—1 report`, `session 1—0..1 trainingResult`.
@@ -240,15 +240,17 @@ Parser **không** gọi AI cloud. Kết quả có thể sai; UI luôn yêu cầu
 - Trình duyệt không thể tái tạo chính xác 100% PPTX. Giáo viên có thể xuất PDF từ chính file PPTX bằng PowerPoint rồi đính kèm.
 - `pdf-visual.ts` dùng pdfjs đọc PDF cục bộ, render từng trang lên canvas rồi lưu JPEG (rộng 1600 px, chất lượng 0.9, tối đa 120 trang/80 MB ảnh, PDF tối đa 80 MB).
 - Render dùng `intent: 'print'` để không phụ thuộc `requestAnimationFrame` — tab bị ẩn/throttle không làm treo chuyển đổi.
-- Mỗi ảnh là `PresentationAsset` với `partPath: pdf/page-N.jpg`; slide nhận `visualAssetId`. `visualMode = 'pdf'` khi có ít nhất một trang.
-- `SlideRenderer` ưu tiên ảnh PDF; slide không có ảnh (PDF thiếu trang/lỗi trang) quay về bản mô phỏng HTML. Thay PPTX sẽ xóa lớp PDF cũ; **Bỏ bản PDF** trả về HTML.
-- PDF gốc không được lưu hay upload.
+- Mỗi trang cũng được đọc text layer bằng `getTextContent()`; `textFromPdfItems()` gom text item thành dòng và lưu vào `pageTexts` (tối đa 8.000 ký tự/trang). Trang chỉ có ảnh để trống, không OCR.
+- Mỗi ảnh là `PresentationAsset` với `partPath: pdf/page-N.jpg`; slide nhận `visualAssetId` và `visualText` (văn bản trang PDF tương ứng). `visualMode = 'pdf'` khi có ít nhất một trang.
+- `SlideRenderer` ưu tiên ảnh PDF; slide không có ảnh (PDF thiếu trang/lỗi trang) quay về bản mô phỏng HTML. Thay PPTX sẽ xóa lớp PDF cũ; **Bỏ bản PDF** trả về HTML và xóa `visualText`.
+- PDF gốc không được lưu hay upload; chỉ ảnh JPEG và văn bản trích từ trang được giữ.
 
 ### 11.3 Ngữ cảnh cho AI
 
-- `buildPresentationContext()` gửi **slider hiện tại**: số trang, tổng slide, tiêu đề, văn bản slide và dàn ý tiêu đề. Không gửi toàn bộ deck.
-- Local provider ưu tiên câu trả lời bám slide khi giáo viên nhắc rõ (“trên slide”, “trang này”…). Gemini nhận trường `baiTrinhChieu` trong payload.
-- PDF chỉ là lớp hiển thị; nội dung AI vẫn lấy từ text do parser PPTX trích xuất.
+- `buildPresentationContext()` gửi **slide hiện tại**: số trang, tổng slide, tiêu đề, văn bản và dàn ý tiêu đề. Không gửi toàn bộ deck.
+- Khi có lớp PDF, `visualText` của trang đang chiếu được ưu tiên làm `text` và dòng đầu tiên được dùng làm `title`; `text` PPTX chỉ là fallback cho trang PDF không có text layer.
+- Local provider trả lời câu hỏi về tên đề/tiêu đề/nội dung đang chiếu từ slide hiện tại trước khi tra kế hoạch bài dạy; câu trả lời bám slide cũng ưu tiên khi giáo viên nhắc “trên slide”, “trang này”, “quan sát”…
+- Gemini nhận trường `baiTrinhChieu` trong payload. Prompt nói rõ slide hiện tại là nguồn đúng cho những gì đang hiển thị; không dùng tên kế hoạch bài dạy nếu khác.
 
 ### 11.4 Sân khấu & đồng bộ
 
@@ -283,7 +285,7 @@ Parser **không** gọi AI cloud. Kết quả có thể sai; UI luôn yêu cầu
 | Lưu video ngoài ý muốn | Ghi hình mặc định tắt; chỉ lưu local; không vào backup |
 | Nhận diện khuôn mặt/cảm xúc | Không dùng model nhận diện; chỉ pose keypoints; UI nói rõ |
 | Dữ liệu tồn tại sau khi xóa | `deleteAllUserData()` xóa toàn bộ bảng, gồm cả recording; **Xóa toàn bộ dữ liệu** cũng xóa khóa Gemini trong `sessionStorage`; bootstrap lại hồ sơ/personas/DEMO |
-| Rò rỉ file bài giảng | PPTX/PDF chỉ đọc cục bộ bằng JSZip/pdfjs, không gọi mạng; file gốc không được lưu, chỉ lưu văn bản/bố cục/ảnh trích xuất trong IndexedDB; lớp PDF nằm ngoài bản sao lưu |
+| Rò rỉ file bài giảng | PPTX/PDF chỉ đọc cục bộ bằng JSZip/pdfjs, không gọi mạng; file gốc không được lưu, chỉ lưu văn bản/bố cục/ảnh trích xuất, văn bản trang PDF trong IndexedDB; lớp PDF nằm ngoài bản sao lưu |
 | Leo thang chi phí API | Rate limit/IP, giới hạn payload, timeout 22 giây, fallback local |
 
 ## 14. Triển khai
@@ -303,5 +305,5 @@ Parser **không** gọi AI cloud. Kết quả có thể sai; UI luôn yêu cầu
 6. **Không dùng LLM để chấm điểm** — điểm đến từ phép đo/luật; LLM chỉ tạo lời thoại/tóm tắt.
 7. **BYOK có kiểm soát** — khóa nhập trong tab là tiện ích cho máy cá nhân; chỉ lưu `sessionStorage`, chỉ gửi proxy cùng nguồn. Khóa server vẫn là lựa chọn khuyến nghị cho triển khai thật.
 8. **In báo cáo từ dữ liệu đã lưu** — HTML tự chứa, escape nội dung, không gọi mạng; người dùng dùng hộp thoại in của trình duyệt để lưu PDF.
-9. **PDF là lớp hiển thị, không phải nguồn nội dung** — PowerPoint không thể được tái tạo chính xác trong trình duyệt, nên PDF xuất từ chính PPTX được render thành ảnh để hiển thị đúng bản gốc; AI và tìm kiếm slide vẫn đọc văn bản từ PPTX. Nhờ vậy không cần viết lại layout engine của PowerPoint và không đánh đổi chất lượng sư phạm.
+9. **Nội dung đang chiếu là nguồn ưu tiên** — PowerPoint không thể được tái tạo chính xác trong trình duyệt, nên PDF xuất từ chính PPTX được render thành ảnh để hiển thị đúng bản gốc. Text layer của đúng trang PDF được dùng làm ngữ cảnh AI (fallback PPTX khi trang không có text), để học sinh AI trả lời theo slide đang chiếu thay vì tên bài trong kế hoạch. Nhờ vậy không cần viết lại layout engine của PowerPoint và không đánh đổi chất lượng sư phạm.
 10. **Không lưu file gốc bài giảng** — chỉ giữ dữ liệu trích xuất và ảnh trang; giảm dung lượng, tránh vô tình phân phối lại file của giáo viên, và giữ đúng cam kết local-first. **Bỏ bản PDF** luôn khôi phục được bản mô phỏng từ PPTX.

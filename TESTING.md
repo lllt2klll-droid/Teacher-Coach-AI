@@ -5,7 +5,7 @@
 | Hạng mục | Lệnh | Kết quả |
 | --- | --- | --- |
 | TypeScript strict | `npm run typecheck` | ✅ Không lỗi |
-| Unit test | `npm run test` | ✅ 13 tệp, 58 test |
+| Unit test | `npm run test` | ✅ 13 tệp, 62 test |
 | Build production | `npm run build` | ✅ Thành công (chỉ cảnh báo dynamic import không hiệu quả) |
 | Kiểm thử trình duyệt | thủ công | ✅ Các luồng chính + PPTX/PDF thật (xem mục 3) |
 | Camera/mic thật | thủ công | ⚠️ Chưa xác minh trong môi trường này |
@@ -23,7 +23,7 @@ Kết quả hiện tại:
 
 ```
 Test Files  13 passed (13)
-Tests       58 passed (58)
+Tests       62 passed (62)
 ```
 
 | Tệp | Số test | Phạm vi |
@@ -34,9 +34,9 @@ Tests       58 passed (58)
 | `src/services/analysis/feedback-engine.test.ts` | 5 | Luật coaching, cooldown, tần suất, ưu tiên |
 | `src/services/training/evaluate-training.test.ts` | 6 | Tiêu chí, đơn vị, dữ liệu thiếu, kết quả đạt/chưa đạt |
 | `src/services/presentation/pptx-parser.test.ts` | 4 | Đọc slide/ảnh/bảng, từ chối file sai, kế thừa hình học placeholder từ layout/master |
-| `src/services/presentation/pdf-visual.test.ts` | 6 | Gắn ảnh PDF theo trang, thiếu trang, thay lớp PDF, cảnh báo, bỏ PDF, no-op |
-| `src/services/presentation/presentation-context.test.ts` | 5 | Chỉ gửi slide hiện tại + dàn ý, clamp chỉ số, gợi ý slide theo hoạt động có căn cứ |
-| `src/providers/local/local-provider.test.ts` | 5 | Không lặp “ạ ạ”, viết hoa sau “Thưa cô,”, giải thích phép nhân, ưu tiên ngữ cảnh slide |
+| `src/services/presentation/pdf-visual.test.ts` | 7 | Gắn ảnh + văn bản PDF theo trang, thiếu trang, thay lớp PDF, cảnh báo, bỏ PDF, no-op |
+| `src/services/presentation/presentation-context.test.ts` | 7 | Chỉ gửi slide hiện tại + dàn ý, clamp chỉ số, ưu tiên văn bản PDF, fallback PPTX, gợi ý slide theo hoạt động có căn cứ |
+| `src/providers/local/local-provider.test.ts` | 6 | Không lặp “ạ ạ”, viết hoa sau “Thưa cô,”, giải thích phép nhân, ưu tiên slide, đọc tên đề trên slide thay vì tên bài |
 | `src/test/ai-core.test.ts` | 4 | Không khóa → `none`; khóa server → `server`; khóa client ưu tiên; prompt Gemini có `baiTrinhChieu` |
 | `src/lib/gemini-key.test.ts` | 3 | Chuẩn hóa khóa dán, kiểm tra định dạng mềm, che khóa |
 | `src/providers/gemini/gemini-provider.test.ts` | 3 | Gửi `x-gemini-key` tới proxy cùng nguồn; không gửi khi trống; không gửi tới endpoint khác nguồn |
@@ -90,10 +90,12 @@ IndexedDB `teacher-coach-ai` schema v3 (IDB version 30, 13 bảng).
 | 26 | Bỏ bản PDF | Xóa ảnh PDF, giữ nguyên văn bản PPTX, quay về HTML | ✅ `visualMode: html`, `assets: []`, tiêu đề/text 3 slide không đổi |
 | 27 | Thay PPTX | Xác nhận, đọc lại text, xóa lớp PDF cũ | ✅ Hộp thoại “Thay bài trình chiếu hiện tại?”; sau thay: `visualMode: html`, assets rỗng, text đúng |
 | 28 | Lưu lớp PDF sau reload | Ảnh và `visualAssetId` còn nguyên | ✅ Reload vẫn `visualMode: pdf`, 3 trang, 3 `visualAssetId` |
+| 29 | AI đọc đúng trang PDF đang chiếu | PDF có text layer tiếng Việt; tiêu đề trang khác tên kế hoạch bài dạy | ✅ Tích hợp trong trình duyệt (dev): `pageTexts` đúng 3 trang; `context.title` = “Kể chuyện Đôi cánh của Ngựa Trắng”; local provider trả lời “Thưa cô, kể chuyện Đôi cánh của Ngựa Trắng ạ!” thay vì “Bài 54” |
 
 ### Bằng chứng kiểm thử tiêu biểu
 
 - **Parser:** bài dán “Bài 56: Bảng nhân 5” → 3 mục tiêu, 5 hoạt động, 4 câu hỏi, 2 bài tập, confidence 78%.
+- **PDF có text layer:** PDF 3 trang in từ Edge (tiếng Việt) → `renderPdfVisual()` trả `pageTexts` đúng nội dung từng trang; `applyPdfVisual()` gắn `visualText`; `buildPresentationContext()` lấy dòng đầu trang 1 làm tiêu đề; local provider đọc đúng tiêu đề slide thay vì tên bài “Bài 54: Bảng nhân 3”.
 - **Phiên luyện thật:** `session_b7f7d25c-afe5-479a-8694-6ddadd20be1a`
   - 6 lượt giáo viên, 5 câu hỏi, 3 câu mở/gợi mở, 5 lượt học sinh.
   - `report_dbb94241-9c07-48b7-9a9d-51add5d17fea` — 56/100, 3 bằng chứng.
@@ -161,10 +163,12 @@ IndexedDB `teacher-coach-ai` schema v3 (IDB version 30, 13 bảng).
 3. Kiểm tra thumbnail, chuyển slide bằng nút và phím ← →, toàn màn hình.
 4. So sánh ảnh slide trên màn hình với PowerPoint/PDF: vị trí, font, màu, ảnh, bảng.
 5. Thử cả bốn bố cục; mở **cửa sổ trình chiếu riêng** và kiểm tra đồng bộ hai chiều.
-6. Bấm **Bỏ bản PDF**; xác nhận slide quay về bản mô phỏng nhưng văn bản cho AI không đổi.
-7. Thay bằng PPTX khác; xác nhận lớp PDF cũ bị xóa và hộp thoại cảnh báo rõ.
-8. Kiểm tra Network: không có request chứa `.pptx`/`.pdf`; DevTools → Application → IndexedDB không có file gốc, chỉ có text/layout và ảnh trang.
-9. Xuất sao lưu; xác nhận JSON không chứa bảng `presentations` hay ảnh slide.
+6. Trong phòng luyện, đặt câu hỏi “Đọc tên đề cho thầy/cô nào.” khi đang chiếu một trang PDF có tiêu đề khác kế hoạch bài dạy; xác nhận học sinh AI đọc đúng tiêu đề trên slide (và với Gemini, prompt nhận `tieuDeSlide`/`noiDungSlide` từ trang PDF).
+7. Kiểm tra DevTools → Application → IndexedDB: slide có `visualText` đúng văn bản trang PDF; trang PDF chỉ có ảnh thì `visualText` trống và AI dùng văn bản PPTX.
+8. Bấm **Bỏ bản PDF**; xác nhận slide quay về bản mô phỏng, `visualText` bị xóa và AI quay lại đọc văn bản PPTX.
+9. Thay bằng PPTX khác; xác nhận lớp PDF cũ bị xóa và hộp thoại cảnh báo rõ.
+10. Kiểm tra Network: không có request chứa `.pptx`/`.pdf`; DevTools → Application → IndexedDB không có file gốc, chỉ có text/layout, văn bản trang và ảnh trang.
+11. Xuất sao lưu; xác nhận JSON không chứa bảng `presentations` hay ảnh slide.
 
 ## 5. Những gì chưa được xác minh
 
@@ -174,6 +178,8 @@ IndexedDB `teacher-coach-ai` schema v3 (IDB version 30, 13 bảng).
 - **Vercel production:** chưa deploy thật; đã kiểm tra build `dist`, function `api/ai.js`, `vercel.json`.
 - **In PDF thật:** đã kiểm tra HTML và lệnh `print()`; chưa in ra máy in/khổ A4 thực tế.
 - **Độ trung thực slide phức tạp:** đã kiểm tra PPTX/PDF 3 slide đơn giản. Chưa kiểm tra deck nhiều slide với SmartArt, chart, hiệu ứng hoặc font hiếm; PDF là lớp hiển thị nên phần này phụ thuộc PowerPoint xuất PDF đúng.
+- **PDF chỉ có ảnh (không có text layer):** chưa có bộ dữ liệu kiểm thử riêng; hệ thống chủ động không OCR và dùng văn bản PPTX làm fallback. Cần kiểm tra thủ công với PDF scan/ảnh.
+- **Gemini với ngữ cảnh trang PDF:** đã kiểm tra prompt chứa `baiTrinhChieu` và quy tắc ưu tiên slide bằng unit test; chưa gọi Gemini thật do thiếu khóa hợp lệ.
 - **Đa trình duyệt:** chưa kiểm tra Firefox/Safari; Web Speech và một số API media có thể khác. pdfjs dùng `intent: 'print'` đã xử lý tab bị throttle `requestAnimationFrame` trong Chromium.
 - **Tải model khi mất mạng:** script có nhánh tải từ Google, nhưng lần chạy đã dùng tệp có sẵn.
 
@@ -184,6 +190,7 @@ IndexedDB `teacher-coach-ai` schema v3 (IDB version 30, 13 bảng).
 - [ ] `npm run build`
 - [ ] Kiểm tra onboarding → upload → xác nhận → luyện → báo cáo trên Chrome
 - [ ] Tải PPTX thật + PDF PowerPoint; kiểm tra 4 bố cục, chuyển slide, cửa sổ riêng, bỏ PDF, thay PPTX
+- [ ] Hỏi “Đọc tên đề” trên một trang PDF có tiêu đề khác kế hoạch bài dạy; xác nhận AI đọc đúng slide và `visualText` đúng trang
 - [ ] Xác nhận Network không có file `.pptx`/`.pdf` và backup không chứa bảng `presentations`
 - [ ] Kiểm tra camera/mic thật (mục 4.1, 4.2)
 - [ ] Kiểm tra Gemini thật (mục 4.3) nếu bật tính năng

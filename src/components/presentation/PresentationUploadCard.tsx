@@ -121,7 +121,7 @@ export function PresentationUploadCard({
       onSaved?.(saved);
       toast.success(
         'Đã dùng PDF làm bản hiển thị gốc',
-        `${rendered.pageCount} trang đã được lưu cục bộ. AI vẫn đọc nội dung từ PPTX.`,
+        `${rendered.pageCount} trang đã được lưu cục bộ. AI đọc văn bản của trang PDF đang chiếu.`,
       );
     } catch (pdfImportError) {
       console.error(pdfImportError);
@@ -340,8 +340,8 @@ export function PresentationUploadCard({
                   {presentation.visualFileName ?? 'ban-xuat-powerpoint.pdf'} · {presentation.visualPageCount ?? 0} trang
                 </p>
                 <p className="mt-1 text-[10.5px] leading-relaxed text-[var(--text-2)]">
-                  Slide được hiển thị từ ảnh PDF xuất bởi PowerPoint; AI vẫn đọc nội dung từ PPTX. File PDF gốc không
-                  được lưu lại.
+                  Slide được hiển thị từ ảnh PDF xuất bởi PowerPoint; AI đọc văn bản của trang đang chiếu (từ PDF nếu
+                  có, nếu không từ PPTX). File PDF gốc không được lưu lại.
                 </p>
               </div>
             </div>
@@ -499,7 +499,7 @@ export function PresentationUploadCard({
         onConfirm={() => void handleRemovePdf()}
         loading={pdfRemoving}
         title="Bỏ bản PDF gốc?"
-        message="Ảnh từng trang PDF sẽ bị xóa khỏi thiết bị. Slide quay lại bản mô phỏng từ PPTX; nội dung AI không thay đổi."
+        message="Ảnh từng trang PDF sẽ bị xóa khỏi thiết bị. Slide quay lại bản mô phỏng từ PPTX và AI đọc văn bản PPTX."
         confirmLabel="Bỏ bản PDF"
       />
 

@@ -105,7 +105,7 @@ function findRelevantSlideLine(
   const lines = presentation.text
     .split(/\n|(?<=[.!?…])\s+/u)
     .map((line) => line.replace(/^[-–•*]\s*/, '').trim())
-    .filter((line) => line.length >= 8 && line.length <= 220);
+    .filter((line) => line.length >= 3 && line.length <= 220);
   let best: { text: string; score: number } | null = null;
   for (const line of lines) {
     const score = jaccardSimilarity(question, line);
@@ -122,6 +122,27 @@ function referencesSlide(text: string): boolean {
 function slideReference(presentation: StudentResponseInput['presentation']): string {
   if (!presentation?.title) return '';
   return `slide “${shorten(presentation.title, 42)}”`;
+}
+
+function slideVisibleTitle(presentation: StudentResponseInput['presentation']): string {
+  const title = presentation?.title?.trim() ?? '';
+  if (title && !/^slide\s+\d+$/i.test(title)) return title;
+  const first = presentation?.text.trim().split(/(?<=[.!?…])\s+/u)[0]?.trim() ?? '';
+  return first || title;
+}
+
+/** Questions such as "đọc tên đề" refer to what is on screen, not the lesson plan title. */
+function asksForSlideTitle(text: string): boolean {
+  const folded = foldVietnamese(text);
+  return /(doc ten|ten de|ten bai|tieu de|chu de|de bai|doc lai ten)/.test(folded);
+}
+
+/** "Thấy gì", "có gì" asks for the visible content, not just a slide reference. */
+function asksWhatIsVisible(text: string): boolean {
+  const folded = foldVietnamese(text);
+  return /(thay gi|co gi|nhin thay|quan sat duoc|noi dung gi|doc ten|ten de|ten bai|tieu de|chu de|de bai)/.test(
+    folded,
+  );
 }
 
 function futurePhaseQuestion(lesson: LessonPlan, phase: LessonPlan['lessonPhases'][number] | null, question: string): boolean {
@@ -236,6 +257,22 @@ export class LocalRuleProvider implements AIProvider {
       return { text, quality: 'neutral', eventType: 'PARTICIPATE_IN_ACTIVITY', confidence: 0.86, source: 'local_rules' };
     }
 
+    // The class answers about the slide that is actually on screen. This must
+    // run before lesson-plan instructions so "đọc tên đề" cannot fall back to
+    // the lesson title when the teacher is showing a different slide deck.
+    if (presentation && (asksForSlideTitle(teacherText) || (question.isQuestion && asksWhatIsVisible(teacherText)))) {
+      const visible = slideVisibleTitle(presentation);
+      if (visible) {
+        return {
+          text: answerSentence(visible, student),
+          quality: 'correct',
+          eventType: 'ANSWER_QUESTION',
+          confidence: 0.84,
+          source: 'local_rules',
+        };
+      }
+    }
+
     if (intent === 'group_work' || intent === 'instruction' || intent === 'exercise') {
       if (student.participationStyle === 'distracted' && Math.random() < 0.42) {
         return {
@@ -344,10 +381,12 @@ export class LocalRuleProvider implements AIProvider {
 
     const arithmetic = tryArithmeticAnswer(teacherText);
     const slideLine = findRelevantSlideLine(presentation, teacherText);
-    // When the teacher explicitly points at the slide and the question matches
-    // the slide content, the slide wins over a weak answer from the lesson plan.
-    const explicitSlideLine =
-      referencesSlide(teacherText) && slideLine && slideLine.score >= 0.1 ? slideLine.text : null;
+    const wantsSlide = referencesSlide(teacherText) || asksWhatIsVisible(teacherText);
+    // When the teacher points at the screen/slide, the visible slide wins over
+    // a weak or stale answer from the lesson plan.
+    const explicitSlideLine = wantsSlide
+      ? slideLine?.text ?? slideVisibleTitle(presentation) ?? null
+      : null;
     const expected = explicitSlideLine ? null : findExpectedAnswer(lesson, phase, teacherText);
     const relevantKnowledge =
       expected || explicitSlideLine ? null : findRelevantKnowledge(lesson, teacherText);

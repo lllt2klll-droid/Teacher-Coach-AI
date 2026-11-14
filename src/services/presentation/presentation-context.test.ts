@@ -48,6 +48,24 @@ describe('buildPresentationContext', () => {
     expect(buildPresentationContext({ slides: [] }, 0)).toBeNull();
     expect(buildPresentationContext(makePresentation(), 99)?.slideNumber).toBe(3);
   });
+
+  it('uses the PDF page text when the visual layer is attached', () => {
+    const presentation = makePresentation();
+    presentation.slides[1].visualText = 'Kể chuyện: Đôi cánh của Ngựa Trắng.';
+    const context = buildPresentationContext(presentation, 1);
+
+    expect(context?.title).toBe('Kể chuyện: Đôi cánh của Ngựa Trắng');
+    expect(context?.text).toBe('Kể chuyện: Đôi cánh của Ngựa Trắng.');
+    expect(context?.slideNumber).toBe(2);
+  });
+
+  it('falls back to PPTX text when the PDF page has no text layer', () => {
+    const presentation = makePresentation();
+    presentation.slides[1].visualText = '   ';
+    const context = buildPresentationContext(presentation, 1);
+
+    expect(context?.text).toBe('Luyện tập: cùng làm bài tập bảng nhân 4.');
+  });
 });
 
 describe('suggestSlideForPhase', () => {
