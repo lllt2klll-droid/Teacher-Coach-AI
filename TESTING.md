@@ -91,7 +91,7 @@ IndexedDB `teacher-coach-ai` schema v3 (IDB version 30, 13 bảng).
 | 27 | Thay PPTX | Xác nhận, đọc lại text, xóa lớp PDF cũ | ✅ Hộp thoại “Thay bài trình chiếu hiện tại?”; sau thay: `visualMode: html`, assets rỗng, text đúng |
 | 28 | Lưu lớp PDF sau reload | Ảnh và `visualAssetId` còn nguyên | ✅ Reload vẫn `visualMode: pdf`, 3 trang, 3 `visualAssetId` |
 | 29 | AI đọc đúng trang PDF đang chiếu | PDF có text layer tiếng Việt; tiêu đề trang khác tên kế hoạch bài dạy | ✅ Tích hợp trong trình duyệt (dev): `pageTexts` đúng 3 trang; `context.title` = “Kể chuyện Đôi cánh của Ngựa Trắng”; local provider trả lời “Thưa cô, kể chuyện Đôi cánh của Ngựa Trắng ạ!” thay vì “Bài 54” |
-| 30 | Hỏi “Đọc tên đề” trong phòng luyện (UI) | Tải PPTX + PDF 3 trang qua giao diện; slide 1 khác tên bài | ✅ `visualText` lưu đủ 3/3 trang; học sinh AI “Hoàng Nam” trả lời “Thưa cô, kể chuyện Đôi cánh của Ngựa Trắng ạ!”; không dùng “Bài 54: Bảng nhân 3” |
+| 30 | Hỏi “Đọc tên đề” trong phòng luyện (UI) | Tải PPTX + PDF 3 trang qua giao diện; slide 1 khác tên bài; chuyển sang slide 2 | ✅ `visualText` lưu đủ 3/3 trang; slide 1: “Hoàng Nam” trả lời “Thưa cô, kể chuyện Đôi cánh của Ngựa Trắng ạ!”; chuyển slide 2: “Hoàng Nam” trả lời “Thưa cô, luyện tập bảng nhân 3 ạ!”; không dùng “Bài 54: Bảng nhân 3” |
 
 ### Bằng chứng kiểm thử tiêu biểu
 
