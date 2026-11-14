@@ -169,6 +169,7 @@ IndexedDB `teacher-coach-ai` schema v3 (IDB version 30, 13 bảng).
 9. Thay bằng PPTX khác; xác nhận lớp PDF cũ bị xóa và hộp thoại cảnh báo rõ.
 10. Kiểm tra Network: không có request chứa `.pptx`/`.pdf`; DevTools → Application → IndexedDB không có file gốc, chỉ có text/layout, văn bản trang và ảnh trang.
 11. Xuất sao lưu; xác nhận JSON không chứa bảng `presentations` hay ảnh slide.
+12. Với PDF đính kèm trước bản 0.3.1 (chưa có `visualText`), xác nhận thẻ PDF hiển thị nhắc **Thay PDF**; sau khi thay, số trang có văn bản tăng và AI đọc đúng trang.
 
 ## 5. Những gì chưa được xác minh
 

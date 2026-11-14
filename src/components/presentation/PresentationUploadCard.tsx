@@ -73,6 +73,7 @@ export function PresentationUploadCard({
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pdfRemoveOpen, setPdfRemoveOpen] = useState(false);
   const [pdfRemoving, setPdfRemoving] = useState(false);
+  const pdfTextPages = presentation?.slides.filter((slide) => slide.visualText?.trim()).length ?? 0;
 
   useEffect(() => {
     setError(null);
@@ -342,6 +343,11 @@ export function PresentationUploadCard({
                 <p className="mt-1 text-[10.5px] leading-relaxed text-[var(--text-2)]">
                   Slide được hiển thị từ ảnh PDF xuất bởi PowerPoint; AI đọc văn bản của trang đang chiếu (từ PDF nếu
                   có, nếu không từ PPTX). File PDF gốc không được lưu lại.
+                </p>
+                <p className="mt-1 text-[10.5px] leading-relaxed text-[var(--text-2)]">
+                  {pdfTextPages > 0
+                    ? `AI đọc được văn bản ${pdfTextPages}/${presentation.slides.length} trang PDF.`
+                    : 'PDF này chưa có văn bản trích xuất (PDF cũ hoặc chỉ có ảnh); AI đang dùng văn bản PPTX. Nếu PDF có text layer, bấm “Thay PDF” để AI đọc đúng trang.'}
                 </p>
               </div>
             </div>

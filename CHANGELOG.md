@@ -13,7 +13,8 @@ Sửa lỗi học sinh AI trả lời theo tên bài trong kế hoạch dạy th
 - **Ưu tiên văn bản trang PDF:** khi đính kèm PDF, `pdf-visual.ts` đọc text layer của từng trang bằng `getTextContent()` và lưu `visualText`; `buildPresentationContext()` dùng văn bản trang đang chiếu làm ngữ cảnh AI và lấy dòng đầu làm tiêu đề slide. Trang PDF không có text layer quay về văn bản PPTX; ảnh không được OCR.
 - **Câu hỏi về tên đề/tiêu đề:** local provider trả lời từ slide hiện tại trước khi tra kế hoạch bài dạy. Trường hợp slide “Kể chuyện Đôi cánh của Ngựa Trắng” không còn bị trả lời “Bài 54: Bảng nhân 3”.
 - **Gemini:** prompt nói rõ slide hiện tại là nguồn đúng cho những gì đang hiển thị và không dùng tên kế hoạch bài dạy nếu khác.
-- **Giao diện:** thông báo đính kèm/bỏ PDF mô tả đúng việc AI đọc văn bản trang PDF, fallback PPTX.
+- **Thay PPTX:** xóa cả `visualText` cũ để văn bản trang PDF của bài trước không rò sang bài mới.
+- **Giao diện:** thông báo đính kèm/bỏ PDF mô tả đúng việc AI đọc văn bản trang PDF, fallback PPTX; hiển thị số trang PDF có văn bản và nhắc bấm **Thay PDF** nếu PDF cũ/chỉ có ảnh chưa có text layer.
 
 ### Kiểm thử
 

@@ -206,7 +206,7 @@ export const presentationRepo = {
     // belong to the old file and could show the wrong slide.
     const presentation: PresentationDoc = {
       ...draft,
-      slides: draft.slides.map((slide) => ({ ...slide, visualAssetId: undefined })),
+      slides: draft.slides.map((slide) => ({ ...slide, visualAssetId: undefined, visualText: undefined })),
       id: existing?.id ?? uid('presentation'),
       lessonPlanId,
       visualMode: 'html',
