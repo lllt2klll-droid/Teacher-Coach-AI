@@ -22,6 +22,7 @@ Sửa lỗi học sinh AI trả lời theo tên bài trong kế hoạch dạy th
 - `npm run test`: 13 tệp, 62 test.
 - Bổ sung test hồi quy cho tiêu đề slide ưu tiên hơn tiêu đề bài học, văn bản PDF ưu tiên hơn PPTX và fallback khi trang PDF không có text layer.
 - Kiểm thử tích hợp trong trình duyệt với PDF 3 trang có text layer tiếng Việt: `pageTexts` đúng từng trang, `context.title` là “Kể chuyện Đôi cánh của Ngựa Trắng”, local provider trả lời đúng tiêu đề slide thay vì “Bài 54: Bảng nhân 3”.
+- Kiểm thử UI đầy đủ: tải PPTX + PDF qua giao diện, xác nhận `visualText` 3/3 trang trong IndexedDB; trong phòng luyện, học sinh AI “Hoàng Nam” trả lời “Thưa cô, kể chuyện Đôi cánh của Ngựa Trắng ạ!” khi giáo viên nói “Đọc tên đề cho thầy nào.”.
 
 ### Giới hạn đã biết
 
